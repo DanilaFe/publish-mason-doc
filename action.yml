@@ -45,18 +45,23 @@ runs:
         VERSION="${{ steps.resolve-version.outputs.version }}"
         UBUNTU_VERSION=$(lsb_release -rs | cut -d. -f1)
         ARCH=$(dpkg --print-architecture)
+        EXPECTED_DEB="chapel-${VERSION}-1.ubuntu${UBUNTU_VERSION}.${ARCH}.deb"
 
-        if [ "$UBUNTU_VERSION" != "22" ] && [ "$UBUNTU_VERSION" != "24" ]; then
-          echo "::error::Unsupported Ubuntu version: $UBUNTU_VERSION. This action supports ubuntu-22 and ubuntu-24 runners."
+        RELEASE_JSON=$(curl -sf \
+          -H "Accept: application/vnd.github+json" \
+          "https://api.github.com/repos/chapel-lang/chapel/releases/tags/${VERSION}")
+
+        DOWNLOAD_URL=$(echo "$RELEASE_JSON" | jq -r \
+          ".assets[] | select(.name == \"${EXPECTED_DEB}\") | .browser_download_url")
+
+        if [ -z "$DOWNLOAD_URL" ]; then
+          AVAILABLE=$(echo "$RELEASE_JSON" | jq -r '[.assets[].name | select(endswith(".deb"))] | join(", ")')
+          echo "::error::Could not find ${EXPECTED_DEB} in Chapel ${VERSION} release. Available .deb packages: ${AVAILABLE}"
           exit 1
         fi
 
-        DEB_URL="https://github.com/chapel-lang/chapel/releases/download/${VERSION}/chapel-${VERSION}-1.ubuntu${UBUNTU_VERSION}.${ARCH}.deb"
-        echo "Downloading Chapel ${VERSION} for ubuntu${UBUNTU_VERSION} ${ARCH}..."
-        curl -fsSL -o chapel.deb "$DEB_URL" || {
-          echo "::error::Failed to download Chapel ${VERSION} for ubuntu${UBUNTU_VERSION} ${ARCH}. Check that this version/platform combination exists at https://github.com/chapel-lang/chapel/releases"
-          exit 1
-        }
+        echo "Downloading ${EXPECTED_DEB}..."
+        curl -fsSL -o chapel.deb "$DOWNLOAD_URL"
         sudo apt-get install -y ./chapel.deb
         rm chapel.deb
 

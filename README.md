@@ -48,7 +48,7 @@ This action does not define its own outputs. The `actions/deploy-pages` step use
 
 ## Requirements
 
-- **Runner**: `ubuntu-latest` (Ubuntu 22.04 or 24.04, `amd64` or `arm64`)
+- **Runner**: Ubuntu with `apt`, `sudo`, `curl`, and `jq` available (e.g. `ubuntu-latest`). The action checks the GitHub Releases API to confirm a `.deb` package exists for the runner's Ubuntu version and architecture, and reports which packages are available if not.
 - **Permissions**: The calling job must have:
   ```yaml
   permissions:
