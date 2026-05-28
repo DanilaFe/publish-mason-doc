@@ -1,0 +1,81 @@
+name: 'Publish Mason Documentation'
+description: 'Generate Chapel Mason project documentation with mason doc and deploy to GitHub Pages'
+
+inputs:
+  chapel-version:
+    description: 'Chapel version to install (e.g. "2.8.0" or "latest")'
+    required: false
+    default: 'latest'
+  source-dir:
+    description: 'Relative path to the mason project root within the repository'
+    required: false
+    default: '.'
+  docs-dir:
+    description: 'Subdirectory (relative to source-dir) where mason doc writes its output'
+    required: false
+    default: 'doc'
+  token:
+    description: 'GitHub token used for Pages deployment and resolving the latest Chapel version'
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: 'composite'
+  steps:
+    - name: Resolve Chapel version
+      id: resolve-version
+      shell: bash
+      run: |
+        VERSION="${{ inputs.chapel-version }}"
+        if [ "$VERSION" = "latest" ]; then
+          VERSION=$(curl -sf \
+            -H "Authorization: token ${{ inputs.token }}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/chapel-lang/chapel/releases/latest \
+            | jq -r '.tag_name')
+        fi
+        if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
+          echo "::error::Failed to resolve Chapel version. Check your token or specify an explicit chapel-version."
+          exit 1
+        fi
+        echo "version=$VERSION" >> $GITHUB_OUTPUT
+
+    - name: Install Chapel
+      shell: bash
+      run: |
+        VERSION="${{ steps.resolve-version.outputs.version }}"
+        UBUNTU_VERSION=$(lsb_release -rs | cut -d. -f1)
+        ARCH=$(dpkg --print-architecture)
+
+        if [ "$UBUNTU_VERSION" != "22" ] && [ "$UBUNTU_VERSION" != "24" ]; then
+          echo "::error::Unsupported Ubuntu version: $UBUNTU_VERSION. This action supports ubuntu-22 and ubuntu-24 runners."
+          exit 1
+        fi
+
+        DEB_URL="https://github.com/chapel-lang/chapel/releases/download/${VERSION}/chapel-${VERSION}-1.ubuntu${UBUNTU_VERSION}.${ARCH}.deb"
+        echo "Downloading Chapel ${VERSION} for ubuntu${UBUNTU_VERSION} ${ARCH}..."
+        curl -fsSL -o chapel.deb "$DEB_URL" || {
+          echo "::error::Failed to download Chapel ${VERSION} for ubuntu${UBUNTU_VERSION} ${ARCH}. Check that this version/platform combination exists at https://github.com/chapel-lang/chapel/releases"
+          exit 1
+        }
+        sudo apt-get install -y ./chapel.deb
+        rm chapel.deb
+
+    - name: Generate documentation
+      shell: bash
+      working-directory: ${{ github.workspace }}/${{ inputs.source-dir }}
+      run: mason doc
+
+    - name: Configure Pages
+      uses: actions/configure-pages@v5
+      with:
+        token: ${{ inputs.token }}
+
+    - name: Upload Pages artifact
+      uses: actions/upload-pages-artifact@v3
+      with:
+        path: ${{ github.workspace }}/${{ inputs.source-dir }}/${{ inputs.docs-dir }}
+
+    - name: Deploy to GitHub Pages
+      id: deployment
+      uses: actions/deploy-pages@v4
