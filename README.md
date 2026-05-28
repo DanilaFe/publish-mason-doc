@@ -1,6 +1,6 @@
 # publish-mason-doc
 
-A GitHub Action that generates documentation for a [Chapel](https://chapel-lang.org/) [mason](https://chapel-lang.org/docs/tools/mason/mason.html) package and publishes it to GitHub Pages — all in one step.
+A GitHub Action that generates documentation for a [Chapel](https://chapel-lang.org/) [mason](https://chapel-lang.org/docs/tools/mason/mason.html) package and publishes it to GitHub Pages.
 
 It installs Chapel via the official pre-built packages, runs `mason doc` to generate HTML documentation, and deploys the result to GitHub Pages.
 
@@ -28,7 +28,7 @@ jobs:
 
       - name: Publish docs
         id: publish
-        uses: YOUR_USERNAME/publish-mason-doc@v1
+        uses: DanilaFe/publish-mason-doc@main
 ```
 
 > **Note:** GitHub Pages must be enabled for your repository and the source must be set to **GitHub Actions** in *Settings → Pages*.
@@ -42,13 +42,9 @@ jobs:
 | `docs-dir` | No | `doc` | Subdirectory (relative to `source-dir`) where `mason doc` writes its output. |
 | `token` | No | `github.token` | GitHub token used for Pages deployment. |
 
-## Outputs
-
-This action does not define its own outputs. The `actions/deploy-pages` step used internally does not surface `page_url` through composite action outputs. If you need the deployed URL, you can retrieve it from the Pages API or your repository settings.
-
 ## Requirements
 
-- **Runner**: Ubuntu with `apt`, `sudo`, `curl`, and `jq` available (e.g. `ubuntu-latest`). The action checks the GitHub Releases API to confirm a `.deb` package exists for the runner's Ubuntu version and architecture, and reports which packages are available if not.
+- **Runner**: Ubuntu with `apt`, `sudo`, `curl`, and `jq` available (e.g. `ubuntu-latest`). The action checks the GitHub Releases API to confirm a `.deb` package exists for the runner's Ubuntu version and architecture. This may be relevant if there is no Chapel release for the current version of Ubuntu used by the runner.
 - **Permissions**: The calling job must have:
   ```yaml
   permissions:
@@ -62,16 +58,8 @@ This action does not define its own outputs. The `actions/deploy-pages` step use
 ## Example: Mason project in a subdirectory
 
 ```yaml
-- uses: YOUR_USERNAME/publish-mason-doc@v1
+- uses: DanilaFe/publish-mason-doc@main
   with:
     source-dir: my-chapel-package
     chapel-version: '2.8.0'
 ```
-
-## How it works
-
-1. Resolves the Chapel version (fetches the latest release tag if `chapel-version: latest`)
-2. Downloads and installs the official Chapel `.deb` package for the runner's Ubuntu version
-3. Runs `mason doc` inside the mason project directory
-4. Uploads the generated `doc/` folder as a GitHub Pages artifact
-5. Deploys to GitHub Pages
