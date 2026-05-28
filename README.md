@@ -40,7 +40,7 @@ jobs:
 | `chapel-version` | No | `latest` | Chapel version to install (e.g. `2.8.0`). Resolved from the latest GitHub Release when set to `latest`. |
 | `source-dir` | No | `.` | Relative path to the mason project root within the repository. |
 | `docs-dir` | No | `doc` | Subdirectory (relative to `source-dir`) where `mason doc` writes its output. |
-| `token` | No | `github.token` | GitHub token used for Pages deployment and for resolving the latest Chapel version. |
+| `token` | No | `github.token` | GitHub token used for Pages deployment. |
 
 ## Outputs
 

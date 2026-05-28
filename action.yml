@@ -15,7 +15,7 @@ inputs:
     required: false
     default: 'doc'
   token:
-    description: 'GitHub token used for Pages deployment and resolving the latest Chapel version'
+    description: 'GitHub token used for Pages deployment'
     required: false
     default: ${{ github.token }}
 
@@ -29,13 +29,12 @@ runs:
         VERSION="${{ inputs.chapel-version }}"
         if [ "$VERSION" = "latest" ]; then
           VERSION=$(curl -sf \
-            -H "Authorization: token ${{ inputs.token }}" \
             -H "Accept: application/vnd.github+json" \
             https://api.github.com/repos/chapel-lang/chapel/releases/latest \
             | jq -r '.tag_name')
         fi
         if [ -z "$VERSION" ] || [ "$VERSION" = "null" ]; then
-          echo "::error::Failed to resolve Chapel version. Check your token or specify an explicit chapel-version."
+          echo "::error::Failed to resolve Chapel version. Specify an explicit chapel-version input."
           exit 1
         fi
         echo "version=$VERSION" >> $GITHUB_OUTPUT
