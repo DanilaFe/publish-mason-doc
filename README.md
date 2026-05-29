@@ -1,5 +1,8 @@
 # publish-mason-doc
 
+**Note**: This action was generated in nearly one shot by Claude Code running
+in Github Copilot CLI. Commits developed by the LLM are tagged as such.
+
 A GitHub Action that generates documentation for a [Chapel](https://chapel-lang.org/) [mason](https://chapel-lang.org/docs/tools/mason/mason.html) package and publishes it to GitHub Pages.
 
 It installs Chapel via the official pre-built packages, runs `mason doc` to generate HTML documentation, and deploys the result to GitHub Pages.
